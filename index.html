@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>TextClean — Invoice Text Formatter</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #f5f3ee;
+    --surface: #ffffff;
+    --surface2: #faf9f6;
+    --border: #e4e0d8;
+    --border2: #cec9bf;
+    --accent: #2563eb;
+    --accent-light: #eff4ff;
+    --accent-hover: #1d4fd8;
+    --text: #1a1916;
+    --text2: #6b6760;
+    --text3: #a8a49c;
+    --chip-bg: #eff4ff;
+    --chip-text: #2563eb;
+    --chip-border: #bfdbfe;
+    --success: #16a34a;
+    --success-bg: #f0fdf4;
+    --success-border: #bbf7d0;
+    --warn-bg: #fffbeb;
+    --warn-border: #fde68a;
+    --warn-text: #92400e;
+  }
+
+  html { font-size: 16px; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 1.1rem 3rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .logo { display: flex; align-items: center; gap: 0.7rem; }
+
+  .logo-icon {
+    width: 32px; height: 32px;
+    background: var(--accent);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  .logo-mark { font-size: 1.1rem; font-weight: 800; letter-spacing: -0.02em; }
+  .logo-mark span { color: var(--accent); }
+
+  .badge {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.67rem;
+    color: var(--text3);
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    padding: 4px 10px;
+    border-radius: 100px;
+    letter-spacing: 0.04em;
+  }
+
+  main {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    max-width: 1200px;
+    width: 100%;
+    margin: 0 auto;
+    padding: 2rem 3rem;
+    align-items: start;
+  }
+
+  .col { display: flex; flex-direction: column; gap: 1.25rem; }
+
+  .section-label {
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text3);
+    margin-bottom: 0.5rem;
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    overflow: hidden;
+  }
+
+  .card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.65rem 1.1rem;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface2);
+  }
+
+  .card-header-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.67rem;
+    color: var(--text3);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .btn-ghost {
+    background: none;
+    border: 1px solid var(--border);
+    cursor: pointer;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.62rem;
+    color: var(--text2);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 3px 9px;
+    border-radius: 5px;
+    transition: all 0.15s;
+  }
+  .btn-ghost:hover { border-color: var(--border2); color: var(--text); background: var(--bg); }
+
+  textarea {
+    background: transparent;
+    border: none;
+    outline: none;
+    resize: none;
+    width: 100%;
+    min-height: 200px;
+    padding: 1.1rem 1.25rem;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.8rem;
+    color: var(--text);
+    line-height: 1.85;
+    caret-color: var(--accent);
+  }
+  textarea::placeholder { color: var(--text3); }
+
+  .config-inner { padding: 1.1rem 1.25rem; display: flex; flex-direction: column; gap: 1rem; }
+
+  .config-row { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+  .config-left { flex: 1; }
+  .config-title { font-size: 0.85rem; font-weight: 600; color: var(--text); margin-bottom: 2px; }
+  .config-desc { font-size: 0.7rem; color: var(--text3); font-family: 'DM Mono', monospace; }
+
+  .sep-input {
+    background: var(--bg);
+    border: 1px solid var(--border2);
+    border-radius: 7px;
+    padding: 6px 12px;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.82rem;
+    color: var(--text);
+    width: 80px;
+    text-align: center;
+    outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  .sep-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
+
+  .divider { height: 1px; background: var(--border); }
+
+  .toggle { position: relative; width: 38px; height: 22px; cursor: pointer; flex-shrink: 0; }
+  .toggle input { display: none; }
+  .toggle-track { position: absolute; inset: 0; background: var(--border2); border-radius: 100px; transition: background 0.2s; }
+  .toggle input:checked + .toggle-track { background: var(--accent); }
+  .toggle-thumb { position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; background: #fff; border-radius: 50%; transition: transform 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.15); }
+  .toggle input:checked ~ .toggle-thumb { transform: translateX(16px); }
+
+  .btn-run {
+    width: 100%;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    padding: 0.88rem 1.5rem;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-weight: 700;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: background 0.15s, transform 0.1s, box-shadow 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    box-shadow: 0 2px 8px rgba(37,99,235,0.22);
+  }
+  .btn-run:hover { background: var(--accent-hover); box-shadow: 0 4px 14px rgba(37,99,235,0.3); }
+  .btn-run:active { transform: scale(0.98); }
+
+  .chips-box { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 1rem 1.1rem; }
+  .chips-wrap { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 0.5rem; min-height: 26px; }
+
+  .chip {
+    background: var(--chip-bg);
+    color: var(--chip-text);
+    border: 1px solid var(--chip-border);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.68rem;
+    padding: 3px 10px;
+    border-radius: 100px;
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    animation: popIn 0.16s ease both;
+  }
+
+  .chip-empty { color: var(--text3); font-family: 'DM Mono', monospace; font-size: 0.7rem; font-style: italic; }
+
+  /* known fields manager */
+  .fields-manager { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+  .fields-list { padding: 0.75rem 1.1rem; display: flex; flex-wrap: wrap; gap: 6px; min-height: 42px; }
+  .field-tag {
+    display: flex; align-items: center; gap: 5px;
+    background: var(--surface2); border: 1px solid var(--border);
+    font-family: 'DM Mono', monospace; font-size: 0.68rem; color: var(--text2);
+    padding: 3px 8px; border-radius: 6px;
+  }
+  .field-tag-remove {
+    background: none; border: none; cursor: pointer;
+    color: var(--text3); font-size: 12px; line-height: 1;
+    padding: 0; transition: color 0.15s;
+  }
+  .field-tag-remove:hover { color: #dc2626; }
+  .add-field-row {
+    display: flex; gap: 6px; padding: 0.6rem 1.1rem;
+    border-top: 1px solid var(--border); background: var(--surface2);
+  }
+  .add-field-input {
+    flex: 1; background: var(--surface); border: 1px solid var(--border2);
+    border-radius: 6px; padding: 5px 10px;
+    font-family: 'DM Mono', monospace; font-size: 0.75rem; color: var(--text);
+    outline: none; transition: border-color 0.15s;
+  }
+  .add-field-input:focus { border-color: var(--accent); }
+  .add-field-input::placeholder { color: var(--text3); }
+  .btn-add {
+    background: var(--accent); color: #fff; border: none;
+    border-radius: 6px; padding: 5px 12px;
+    font-family: 'DM Mono', monospace; font-size: 0.72rem;
+    cursor: pointer; transition: background 0.15s; white-space: nowrap;
+  }
+  .btn-add:hover { background: var(--accent-hover); }
+
+  .output-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.65rem 1.1rem;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface2);
+  }
+
+  .output-status {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.67rem;
+    color: var(--text3);
+    letter-spacing: 0.04em;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .status-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--border2); flex-shrink: 0; transition: background 0.3s; }
+  .status-dot.active { background: var(--success); }
+
+  .btn-copy {
+    background: none;
+    border: 1px solid var(--border);
+    cursor: pointer;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.62rem;
+    color: var(--text2);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 4px 10px;
+    border-radius: 5px;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .btn-copy:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-light); }
+  .btn-copy.copied { border-color: var(--success-border); color: var(--success); background: var(--success-bg); }
+
+  .output-content {
+    padding: 1.1rem 1.25rem;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.8rem;
+    color: var(--text);
+    line-height: 1.9;
+    word-break: break-all;
+    white-space: pre-wrap;
+    min-height: 80px;
+  }
+  .output-content.placeholder { color: var(--text3); font-style: italic; }
+
+  footer {
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    padding: 1rem 3rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .footer-text { font-family: 'DM Mono', monospace; font-size: 0.64rem; color: var(--text3); letter-spacing: 0.04em; }
+
+  @keyframes popIn {
+    from { opacity: 0; transform: scale(0.85); }
+    to   { opacity: 1; transform: scale(1); }
+  }
+
+  @media (max-width: 768px) {
+    header, footer { padding: 1rem 1.25rem; }
+    main { grid-template-columns: 1fr; padding: 1.25rem; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+        <path d="M2 4.5h12M2 8h7M2 11.5h9" stroke="#fff" stroke-width="1.7" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <div class="logo-mark">Text<span>Clean</span></div>
+  </div>
+  <div class="badge">Invoice · Order · PO Text Formatter</div>
+</header>
+
+<main>
+
+  <div class="col">
+    <div>
+      <div class="section-label">Input</div>
+      <div class="card">
+        <div class="card-header">
+          <span class="card-header-label">raw text</span>
+          <button class="btn-ghost" onclick="clearInput()">Clear</button>
+        </div>
+        <textarea id="input" placeholder="Paste your invoice or order text here, e.g.:&#10;Card Number : 63316300 **** 1591Invoice Number : 2011932076Sales Order Number : A25422536191..."></textarea>
+      </div>
+    </div>
+
+    <button class="btn-run" onclick="format()">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+        <path d="M2 7h10M7 2l5 5-5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      Format Text
+    </button>
+
+    <div>
+      <div class="section-label">Detected Fields</div>
+      <div class="chips-box">
+        <div class="chips-wrap" id="chips">
+          <span class="chip-empty">Fields will appear after formatting…</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col">
+    <div>
+      <div class="section-label">Settings</div>
+      <div class="card">
+        <div class="config-inner">
+
+          <div class="config-row">
+            <div class="config-left">
+              <div class="config-title">Field Separator</div>
+              <div class="config-desc">Inserted between each field</div>
+            </div>
+            <input class="sep-input" id="sep" value=". " maxlength="10" />
+          </div>
+
+          <div class="divider"></div>
+
+          <div class="config-row">
+            <div class="config-left">
+              <div class="config-title">Full-width → Half-width</div>
+              <div class="config-desc">ａｂｃ → abc &nbsp;·&nbsp; ： → :</div>
+            </div>
+            <label class="toggle">
+              <input type="checkbox" id="toggle-hw" checked />
+              <div class="toggle-track"></div>
+              <div class="toggle-thumb"></div>
+            </label>
+          </div>
+
+          <div class="config-row">
+            <div class="config-left">
+              <div class="config-title">Collapse Extra Spaces</div>
+              <div class="config-desc">Merge consecutive whitespace</div>
+            </div>
+            <label class="toggle">
+              <input type="checkbox" id="toggle-trim" checked />
+              <div class="toggle-track"></div>
+              <div class="toggle-thumb"></div>
+            </label>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="section-label">Known Field Names <span style="font-size:0.62rem;font-weight:400;color:var(--text3);font-family:'DM Mono',monospace;margin-left:4px;">— splits happen only at these</span></div>
+      <div class="fields-manager">
+        <div class="fields-list" id="fields-list"></div>
+        <div class="add-field-row">
+          <input class="add-field-input" id="new-field" placeholder="Add field name, e.g. VAT Number" />
+          <button class="btn-add" onclick="addField()">+ Add</button>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="section-label">Output</div>
+      <div class="card">
+        <div class="output-toolbar">
+          <div class="output-status">
+            <div class="status-dot" id="status-dot"></div>
+            <span id="output-status">Waiting for input…</span>
+          </div>
+          <button class="btn-copy" id="btn-copy" onclick="copy()">
+            <svg width="11" height="11" viewBox="0 0 12 12" fill="none">
+              <rect x="4" y="4" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.2"/>
+              <path d="M8 4V2.5A1.5 1.5 0 006.5 1h-4A1.5 1.5 0 001 2.5v4A1.5 1.5 0 002.5 8H4" stroke="currentColor" stroke-width="1.2"/></svg>
+            Copy
+          </button>
+        </div>
+        <div class="output-content placeholder" id="output">Your formatted result will appear here.</div>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<footer>
+  <div class="footer-text">Splits only on known field names — values are never misread</div>
+  <div class="footer-text">TextClean &copy; 2026</div>
+</footer>
+
+<script>
+// ── Default known field names ──
+const DEFAULT_FIELDS = [
+  "Card Number", "Invoice Number", "Sales Order Number",
+  "Purchase Order Number", "Purchase Order Date",
+  "Tax Point Date", "Due Date", "Invoice Date",
+  "Order Number", "Order Date", "Customer Number",
+  "Customer Name", "Account Number", "Reference Number",
+  "VAT Number", "Total Amount", "Net Amount", "Tax Amount"
+];
+
+let knownFields = JSON.parse(localStorage.getItem('tc_fields') || 'null') || [...DEFAULT_FIELDS];
+
+function saveFields() {
+  localStorage.setItem('tc_fields', JSON.stringify(knownFields));
+}
+
+function renderFieldTags() {
+  const list = document.getElementById('fields-list');
+  list.innerHTML = '';
+  // Sort longest first so longer names match before shorter ones
+  const sorted = [...knownFields].sort((a,b) => b.length - a.length);
+  sorted.forEach(f => {
+    const tag = document.createElement('div');
+    tag.className = 'field-tag';
+    tag.innerHTML = `<span>${f}</span><button class="field-tag-remove" title="Remove" onclick="removeField('${f.replace(/'/g,"\\'")}')">✕</button>`;
+    list.appendChild(tag);
+  });
+}
+
+function addField() {
+  const input = document.getElementById('new-field');
+  const val = input.value.trim();
+  if (!val || knownFields.includes(val)) { input.value = ''; return; }
+  knownFields.push(val);
+  saveFields();
+  renderFieldTags();
+  input.value = '';
+}
+
+function removeField(name) {
+  knownFields = knownFields.filter(f => f !== name);
+  saveFields();
+  renderFieldTags();
+}
+
+document.getElementById('new-field').addEventListener('keydown', e => {
+  if (e.key === 'Enter') addField();
+});
+
+// ── Core logic ──
+function toHalfWidth(str) {
+  return str
+    .replace(/[\uff01-\uff5e]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xfee0))
+    .replace(/\u3000/g, ' ')
+    .replace(/[\u2018\u2019]/g, "'")
+    .replace(/[\u201c\u201d]/g, '"')
+    .replace(/\u3001/g, ',').replace(/\u3002/g, '.')
+    .replace(/\uff0c/g, ',').replace(/\uff1a/g, ':')
+    .replace(/\uff1b/g, ';').replace(/\uff1f/g, '?')
+    .replace(/[\u300c\u300d\u300e\u300f]/g, '"')
+    .replace(/\uff08/g, '(').replace(/\uff09/g, ')');
+}
+
+function parseFields(text) {
+  // Sort by length descending so "Purchase Order Number" matches before "Purchase Order"
+  const sorted = [...knownFields].sort((a, b) => b.length - a.length);
+
+  // Escape for regex
+  const escaped = sorted.map(f => f.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+
+  // Build pattern: split at any known field name followed by optional spaces + colon
+  const splitPattern = new RegExp(`(${escaped.join('|')})\\s*:`, 'g');
+
+  // Find all match positions
+  const parts = [];
+  let match;
+  const positions = [];
+  while ((match = splitPattern.exec(text)) !== null) {
+    positions.push({ index: match.index, name: match[1], colonEnd: match.index + match[0].length });
+  }
+
+  if (positions.length === 0) return [];
+
+  for (let i = 0; i < positions.length; i++) {
+    const start = positions[i].colonEnd;
+    const end = i + 1 < positions.length ? positions[i + 1].index : text.length;
+    const value = text.slice(start, end).trim();
+    parts.push(`${positions[i].name} : ${value}`);
+  }
+
+  return parts;
+}
+
+function format() {
+  let text = document.getElementById('input').value.trim();
+  if (!text) return;
+
+  if (document.getElementById('toggle-hw').checked) text = toHalfWidth(text);
+  if (document.getElementById('toggle-trim').checked) text = text.replace(/[ \t]+/g, ' ');
+
+  const sep = document.getElementById('sep').value;
+  const fields = parseFields(text);
+
+  const chipsEl = document.getElementById('chips');
+  chipsEl.innerHTML = '';
+  if (fields.length === 0) {
+    chipsEl.innerHTML = '<span class="chip-empty">No fields detected — try adding field names below</span>';
+  } else {
+    fields.forEach((f, i) => {
+      const chip = document.createElement('span');
+      chip.className = 'chip';
+      chip.style.animationDelay = (i * 0.04) + 's';
+      chip.textContent = f.split(':')[0].trim();
+      chip.title = f;
+      chipsEl.appendChild(chip);
+    });
+  }
+
+  const result = fields.length > 0 ? fields.join(sep) : text;
+  const outEl = document.getElementById('output');
+  outEl.textContent = result;
+  outEl.classList.remove('placeholder');
+
+  document.getElementById('status-dot').classList.add('active');
+  document.getElementById('output-status').textContent =
+    fields.length + ' field' + (fields.length !== 1 ? 's' : '') + ' processed';
+}
+
+function copy() {
+  const outEl = document.getElementById('output');
+  if (outEl.classList.contains('placeholder')) return;
+  navigator.clipboard.writeText(outEl.textContent).then(() => {
+    const btn = document.getElementById('btn-copy');
+    btn.textContent = 'Copied!';
+    btn.classList.add('copied');
+    setTimeout(() => {
+      btn.innerHTML = '<svg width="11" height="11" viewBox="0 0 12 12" fill="none"><rect x="4" y="4" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.2"/><path d="M8 4V2.5A1.5 1.5 0 006.5 1h-4A1.5 1.5 0 001 2.5v4A1.5 1.5 0 002.5 8H4" stroke="currentColor" stroke-width="1.2"/></svg> Copy';
+      btn.classList.remove('copied');
+    }, 2000);
+  });
+}
+
+function clearInput() {
+  document.getElementById('input').value = '';
+  const outEl = document.getElementById('output');
+  outEl.textContent = 'Your formatted result will appear here.';
+  outEl.classList.add('placeholder');
+  document.getElementById('chips').innerHTML = '<span class="chip-empty">Fields will appear after formatting…</span>';
+  document.getElementById('output-status').textContent = 'Waiting for input…';
+  document.getElementById('status-dot').classList.remove('active');
+}
+
+document.getElementById('input').addEventListener('paste', () => setTimeout(format, 50));
+
+// Init
+renderFieldTags();
+</script>
+
+</body>
+</html>
