@@ -26,6 +26,9 @@
     --success: #16a34a;
     --success-bg: #f0fdf4;
     --success-border: #bbf7d0;
+    --warn-bg: #fffbeb;
+    --warn-border: #fde68a;
+    --warn-text: #92400e;
   }
 
   html { font-size: 16px; }
@@ -139,7 +142,7 @@
     outline: none;
     resize: none;
     width: 100%;
-    min-height: 220px;
+    min-height: 200px;
     padding: 1.1rem 1.25rem;
     font-family: 'DM Mono', monospace;
     font-size: 0.8rem;
@@ -220,6 +223,41 @@
   }
 
   .chip-empty { color: var(--text3); font-family: 'DM Mono', monospace; font-size: 0.7rem; font-style: italic; }
+
+  /* known fields manager */
+  .fields-manager { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+  .fields-list { padding: 0.75rem 1.1rem; display: flex; flex-wrap: wrap; gap: 6px; min-height: 42px; }
+  .field-tag {
+    display: flex; align-items: center; gap: 5px;
+    background: var(--surface2); border: 1px solid var(--border);
+    font-family: 'DM Mono', monospace; font-size: 0.68rem; color: var(--text2);
+    padding: 3px 8px; border-radius: 6px;
+  }
+  .field-tag-remove {
+    background: none; border: none; cursor: pointer;
+    color: var(--text3); font-size: 12px; line-height: 1;
+    padding: 0; transition: color 0.15s;
+  }
+  .field-tag-remove:hover { color: #dc2626; }
+  .add-field-row {
+    display: flex; gap: 6px; padding: 0.6rem 1.1rem;
+    border-top: 1px solid var(--border); background: var(--surface2);
+  }
+  .add-field-input {
+    flex: 1; background: var(--surface); border: 1px solid var(--border2);
+    border-radius: 6px; padding: 5px 10px;
+    font-family: 'DM Mono', monospace; font-size: 0.75rem; color: var(--text);
+    outline: none; transition: border-color 0.15s;
+  }
+  .add-field-input:focus { border-color: var(--accent); }
+  .add-field-input::placeholder { color: var(--text3); }
+  .btn-add {
+    background: var(--accent); color: #fff; border: none;
+    border-radius: 6px; padding: 5px 12px;
+    font-family: 'DM Mono', monospace; font-size: 0.72rem;
+    cursor: pointer; transition: background 0.15s; white-space: nowrap;
+  }
+  .btn-add:hover { background: var(--accent-hover); }
 
   .output-toolbar {
     display: flex;
@@ -385,6 +423,17 @@
     </div>
 
     <div>
+      <div class="section-label">Known Field Names <span style="font-size:0.62rem;font-weight:400;color:var(--text3);font-family:'DM Mono',monospace;margin-left:4px;">— splits happen only at these</span></div>
+      <div class="fields-manager">
+        <div class="fields-list" id="fields-list"></div>
+        <div class="add-field-row">
+          <input class="add-field-input" id="new-field" placeholder="Add field name, e.g. VAT Number" />
+          <button class="btn-add" onclick="addField()">+ Add</button>
+        </div>
+      </div>
+    </div>
+
+    <div>
       <div class="section-label">Output</div>
       <div class="card">
         <div class="output-toolbar">
@@ -395,8 +444,7 @@
           <button class="btn-copy" id="btn-copy" onclick="copy()">
             <svg width="11" height="11" viewBox="0 0 12 12" fill="none">
               <rect x="4" y="4" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.2"/>
-              <path d="M8 4V2.5A1.5 1.5 0 006.5 1h-4A1.5 1.5 0 001 2.5v4A1.5 1.5 0 002.5 8H4" stroke="currentColor" stroke-width="1.2"/>
-            </svg>
+              <path d="M8 4V2.5A1.5 1.5 0 006.5 1h-4A1.5 1.5 0 001 2.5v4A1.5 1.5 0 002.5 8H4" stroke="currentColor" stroke-width="1.2"/></svg>
             Copy
           </button>
         </div>
@@ -408,11 +456,61 @@
 </main>
 
 <footer>
-  <div class="footer-text">Supports invoice, sales order, purchase order, and structured field text</div>
+  <div class="footer-text">Splits only on known field names — values are never misread</div>
   <div class="footer-text">TextClean &copy; 2026</div>
 </footer>
 
 <script>
+// ── Default known field names ──
+const DEFAULT_FIELDS = [
+  "Card Number", "Invoice Number", "Sales Order Number",
+  "Purchase Order Number", "Purchase Order Date",
+  "Tax Point Date", "Due Date", "Invoice Date",
+  "Order Number", "Order Date", "Customer Number",
+  "Customer Name", "Account Number", "Reference Number",
+  "VAT Number", "Total Amount", "Net Amount", "Tax Amount"
+];
+
+let knownFields = JSON.parse(localStorage.getItem('tc_fields') || 'null') || [...DEFAULT_FIELDS];
+
+function saveFields() {
+  localStorage.setItem('tc_fields', JSON.stringify(knownFields));
+}
+
+function renderFieldTags() {
+  const list = document.getElementById('fields-list');
+  list.innerHTML = '';
+  // Sort longest first so longer names match before shorter ones
+  const sorted = [...knownFields].sort((a,b) => b.length - a.length);
+  sorted.forEach(f => {
+    const tag = document.createElement('div');
+    tag.className = 'field-tag';
+    tag.innerHTML = `<span>${f}</span><button class="field-tag-remove" title="Remove" onclick="removeField('${f.replace(/'/g,"\\'")}')">✕</button>`;
+    list.appendChild(tag);
+  });
+}
+
+function addField() {
+  const input = document.getElementById('new-field');
+  const val = input.value.trim();
+  if (!val || knownFields.includes(val)) { input.value = ''; return; }
+  knownFields.push(val);
+  saveFields();
+  renderFieldTags();
+  input.value = '';
+}
+
+function removeField(name) {
+  knownFields = knownFields.filter(f => f !== name);
+  saveFields();
+  renderFieldTags();
+}
+
+document.getElementById('new-field').addEventListener('keydown', e => {
+  if (e.key === 'Enter') addField();
+});
+
+// ── Core logic ──
 function toHalfWidth(str) {
   return str
     .replace(/[\uff01-\uff5e]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xfee0))
@@ -427,14 +525,33 @@ function toHalfWidth(str) {
 }
 
 function parseFields(text) {
-  const pattern = /([A-Z][a-zA-Z]*(?: [A-Z][a-zA-Z]*)*\s*:\s*)(.*?)(?=[A-Z][a-zA-Z]*(?: [A-Z][a-zA-Z]*)*\s*:|$)/g;
-  const fields = [];
+  // Sort by length descending so "Purchase Order Number" matches before "Purchase Order"
+  const sorted = [...knownFields].sort((a, b) => b.length - a.length);
+
+  // Escape for regex
+  const escaped = sorted.map(f => f.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+
+  // Build pattern: split at any known field name followed by optional spaces + colon
+  const splitPattern = new RegExp(`(${escaped.join('|')})\\s*:`, 'g');
+
+  // Find all match positions
+  const parts = [];
   let match;
-  while ((match = pattern.exec(text)) !== null) {
-    const full = (match[1] + match[2]).trim();
-    if (full) fields.push(full);
+  const positions = [];
+  while ((match = splitPattern.exec(text)) !== null) {
+    positions.push({ index: match.index, name: match[1], colonEnd: match.index + match[0].length });
   }
-  return fields;
+
+  if (positions.length === 0) return [];
+
+  for (let i = 0; i < positions.length; i++) {
+    const start = positions[i].colonEnd;
+    const end = i + 1 < positions.length ? positions[i + 1].index : text.length;
+    const value = text.slice(start, end).trim();
+    parts.push(`${positions[i].name} : ${value}`);
+  }
+
+  return parts;
 }
 
 function format() {
@@ -450,7 +567,7 @@ function format() {
   const chipsEl = document.getElementById('chips');
   chipsEl.innerHTML = '';
   if (fields.length === 0) {
-    chipsEl.innerHTML = '<span class="chip-empty">No fields detected</span>';
+    chipsEl.innerHTML = '<span class="chip-empty">No fields detected — try adding field names below</span>';
   } else {
     fields.forEach((f, i) => {
       const chip = document.createElement('span');
@@ -497,6 +614,9 @@ function clearInput() {
 }
 
 document.getElementById('input').addEventListener('paste', () => setTimeout(format, 50));
+
+// Init
+renderFieldTags();
 </script>
 
 </body>
